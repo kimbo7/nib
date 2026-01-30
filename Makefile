@@ -13,7 +13,7 @@ DOCKER_COMPOSE := docker compose --env-file $(CURDIR)/.env
 
 help: ## Show this help message
 	@echo ""
-	@echo "$(BOLD)🌐 Network in a Box (NIB)$(RESET)"
+	@echo "$(BOLD)🌐 NIDS in a Box (NIB)$(RESET)"
 	@echo "$(CYAN)One-command network security monitoring with Suricata IDS and CrowdSec$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Usage:$(RESET)  make <target>"

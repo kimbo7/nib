@@ -1,4 +1,4 @@
-# 🌐 NIB - Network in a Box
+# 🌐 NIB - NIDS in a Box
 
 **One-command network security monitoring** with Suricata IDS and CrowdSec collaborative threat response.
 
@@ -7,7 +7,7 @@
 Part of the **in-a-Box** family:
 - [**SIB**](https://github.com/matijazezelj/sib) - SIEM in a Box (runtime security with Falco)
 - [**OIB**](https://github.com/matijazezelj/oib) - Observability in a Box
-- **NIB** - Network in a Box (this project)
+- **NIB** - NIDS in a Box (this project)
 
 ## Features
 

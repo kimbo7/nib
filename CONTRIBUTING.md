@@ -1,6 +1,6 @@
 # Contributing to NIB
 
-Thanks for your interest in contributing to Network in a Box.
+Thanks for your interest in contributing to NIDS in a Box.
 
 ## Getting Started
 

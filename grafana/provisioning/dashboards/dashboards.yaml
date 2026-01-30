@@ -3,7 +3,7 @@ apiVersion: 1
 providers:
   - name: NIB
     orgId: 1
-    folder: NIB - Network in a Box
+    folder: NIB - NIDS in a Box
     type: file
     disableDeletion: false
     editable: true
