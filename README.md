@@ -227,17 +227,19 @@ nib/
 
 ## Comparison
 
-| Feature | NIB | SecurityOnion | Arkime | Zeek |
-|---------|-----|---------------|--------|------|
-| Setup time | 2 min | 30+ min | 15+ min | 10+ min |
-| Signature IDS | Suricata | Suricata | - | - |
-| Auto-blocking | CrowdSec | - | - | - |
-| Community Intel | CrowdSec network | - | - | - |
-| TLS fingerprints | JA3/JA4 | JA3 | JA3 | JA3 |
-| Protocol logging | 20+ protocols | 20+ | Session data | 30+ |
-| Dashboards | Grafana | Kibana | Custom | - |
-| Resource usage | Low (~1GB) | High (8GB+) | Medium | Low |
-| Docker-native | Yes | Partial | Yes | Partial |
+Most network security tools **detect and alert** — they assume someone is watching. NIB **detects, blocks, and shares**: Suricata finds threats, CrowdSec blocks them automatically, and the community network means you benefit from attacks detected by millions of other nodes before they reach you.
+
+| | NIB | Security Onion | SELKS | Malcolm | Zeek |
+|---|---|---|---|---|---|
+| **Setup** | `make install` | 30-60 min | 15-30 min | 20-30 min | Manual |
+| **Auto-blocking** | Yes (CrowdSec) | No | No | No | No |
+| **Community intel** | Millions of nodes | No | No | No | No |
+| **Router integration** | Built-in | No | No | No | No |
+| **RAM** | ~1 GB | 8-16 GB | 4-8 GB | 8-16 GB | ~512 MB |
+| **Full PCAP** | No | Yes | Optional | Yes | No |
+| **Dashboards** | 4 Grafana | 20+ Kibana | 10+ Scirius | 15+ | None |
+
+For detailed comparisons (when to choose NIB vs when to choose something else), see **[docs/comparison.md](docs/comparison.md)**.
 
 ## How It Works
 
