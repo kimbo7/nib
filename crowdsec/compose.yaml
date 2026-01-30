@@ -15,6 +15,7 @@ services:
     tmpfs:
       - /tmp
       - /var/run
+      - /var/log/crowdsec
     environment:
       - COLLECTIONS=crowdsecurity/suricata crowdsecurity/iptables crowdsecurity/linux
       - ENROLL_KEY=${CROWDSEC_ENROLL_KEY:-}
