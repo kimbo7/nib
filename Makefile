@@ -382,70 +382,11 @@ clean: ## Remove stopped containers and unused images
 	@docker image prune -f 2>/dev/null || true
 	@echo "$(GREEN)✓ Cleaned up$(RESET)"
 
-audit: ## Audit network exposure and security posture
-	@echo ""
-	@echo "$(BOLD)🔒 NIB Security Audit$(RESET)"
-	@echo "$(CYAN)─────────────────────────────────────────$(RESET)"
-	@set -a; . ./.env 2>/dev/null || true; set +a; \
-	ISSUES=0; \
-	echo ""; \
-	echo "$(BOLD)Listening sockets (NIB ports):$(RESET)"; \
-	for port in $${GRAFANA_PORT:-3001} $${VICTORIALOGS_PORT:-9428} $${CROWDSEC_API_PORT:-8080}; do \
-		BIND=$$(ss -tlnp 2>/dev/null | grep ":$$port " || netstat -tlnp 2>/dev/null | grep ":$$port " || echo ""); \
-		if [ -z "$$BIND" ]; then \
-			echo "  $(YELLOW)-$(RESET) Port $$port: not listening"; \
-		elif echo "$$BIND" | grep -q '0.0.0.0:'; then \
-			if [ "$$port" = "$${GRAFANA_PORT:-3001}" ]; then \
-				echo "  $(YELLOW)!$(RESET) Port $$port (Grafana): bound to 0.0.0.0 (expected — restrict via GRAFANA_BIND if needed)"; \
-			else \
-				echo "  $(RED)✗$(RESET) Port $$port: bound to 0.0.0.0 — exposed to all interfaces"; \
-				ISSUES=$$((ISSUES + 1)); \
-			fi; \
-		elif echo "$$BIND" | grep -q '127.0.0.1:'; then \
-			echo "  $(GREEN)✓$(RESET) Port $$port: bound to 127.0.0.1 (localhost only)"; \
-		else \
-			echo "  $(CYAN)i$(RESET) Port $$port: $$BIND"; \
-		fi; \
-	done; \
-	echo ""; \
-	echo "$(BOLD)Bouncer mode:$(RESET)"; \
-	BMODE=$${BOUNCER_MODE:-local}; \
-	if [ "$$BMODE" = "sensor" ]; then \
-		echo "  $(YELLOW)!$(RESET) Sensor mode: CrowdSec LAPI exposed for remote bouncers"; \
-		echo "    Recommendations:"; \
-		echo "    - Bind to a specific IP: CROWDSEC_API_BIND=192.168.x.x"; \
-		echo "    - Firewall port $${CROWDSEC_API_PORT:-8080} to only allow bouncer IPs"; \
-		echo "    - Verify bouncer key is set (cscli bouncers list)"; \
-	else \
-		echo "  $(GREEN)✓$(RESET) Local mode: LAPI bound to localhost, iptables bouncer active"; \
-	fi; \
-	echo ""; \
-	echo "$(BOLD)Privacy mode:$(RESET)"; \
-	PMODE=$${PRIVACY_MODE:-full}; \
-	if [ "$$PMODE" = "alerts-only" ]; then \
-		echo "  $(GREEN)✓$(RESET) alerts-only: no DNS/HTTP/TLS metadata logged"; \
-	else \
-		echo "  $(YELLOW)!$(RESET) full: DNS queries, HTTP URLs, TLS SNI, and protocol metadata are logged"; \
-		echo "    Set PRIVACY_MODE=alerts-only in .env to disable metadata logging"; \
-	fi; \
-	echo ""; \
-	echo "$(BOLD)Container hardening:$(RESET)"; \
-	for svc in nib-suricata nib-crowdsec nib-bouncer-firewall nib-victorialogs nib-vector nib-grafana; do \
-		NO_NEW=$$(docker inspect --format='{{.HostConfig.SecurityOpt}}' $$svc 2>/dev/null || echo ""); \
-		if echo "$$NO_NEW" | grep -q 'no-new-privileges'; then \
-			echo "  $(GREEN)✓$(RESET) $$svc: no-new-privileges"; \
-		elif docker inspect $$svc >/dev/null 2>&1; then \
-			echo "  $(RED)✗$(RESET) $$svc: missing no-new-privileges"; \
-			ISSUES=$$((ISSUES + 1)); \
-		fi; \
-	done; \
-	echo ""; \
-	if [ $$ISSUES -gt 0 ]; then \
-		echo "$(RED)$$ISSUES issue(s) found. Review above.$(RESET)"; \
-	else \
-		echo "$(GREEN)✓ No critical issues found$(RESET)"; \
-	fi; \
-	echo ""
+audit: ## Audit network exposure and security posture (exits non-zero on failure)
+	@./scripts/audit.sh
+
+audit-json: ## Audit with JSON output (for CI)
+	@./scripts/audit.sh --json
 
 validate: ## Validate configuration files
 	@echo "$(CYAN)Validating configuration...$(RESET)"
@@ -468,4 +409,4 @@ validate: ## Validate configuration files
 	decisions alerts ban unban collections bouncer-status metrics \
 	router-sync router-sync-daemon add-router-bouncer \
 	test-alert test-dns \
-	open ps check-ports clean audit validate
+	open ps check-ports clean audit audit-json validate
