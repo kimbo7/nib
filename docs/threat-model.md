@@ -59,7 +59,17 @@ NIB runs with elevated privileges:
 
 ### Mitigations applied
 - All containers use `no-new-privileges: true` (prevents privilege escalation)
-- All containers use `cap_drop: ALL` with only required capabilities added back
+- All containers use `cap_drop: ALL` with only required capabilities added back:
+
+| Container | Capabilities | Why |
+|-----------|-------------|-----|
+| nib-suricata | `NET_ADMIN`, `NET_RAW`, `SYS_NICE` | AF_PACKET capture, interface config, thread priority |
+| nib-bouncer-firewall | `NET_ADMIN`, `NET_RAW` | iptables rule manipulation |
+| nib-crowdsec | none | Runs unprivileged (reads logs, serves API) |
+| nib-victorialogs | none | Runs unprivileged (log storage) |
+| nib-vector | none | Runs unprivileged (log shipping) |
+| nib-grafana | none | Runs unprivileged (dashboards) |
+
 - Non-host-network containers run `read_only: true` with explicit `tmpfs` mounts
 - VictoriaLogs and CrowdSec API bind to `127.0.0.1` by default
 - Grafana has anonymous access and sign-up disabled
