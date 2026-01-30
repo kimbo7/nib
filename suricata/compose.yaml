@@ -8,12 +8,16 @@ services:
     container_name: nib-suricata
     restart: unless-stopped
     network_mode: host
+    cap_drop:
+      - ALL
     cap_add:
       - NET_ADMIN
       - NET_RAW
       - SYS_NICE
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - ./config/suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - ./config/active-suricata.yaml:/etc/suricata/suricata.yaml:ro
       - ./rules:/etc/suricata/rules:ro
       - suricata-logs:/var/log/suricata
       - suricata-run:/var/run/suricata

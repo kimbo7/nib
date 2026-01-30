@@ -6,6 +6,13 @@ services:
     image: victoriametrics/victoria-logs:v1.3.1-victorialogs
     container_name: nib-victorialogs
     restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
     command:
       - -storageDataPath=/data
       - -retentionPeriod=${VICTORIALOGS_RETENTION:-168h}
@@ -27,6 +34,13 @@ services:
     image: timberio/vector:0.43.1-alpine
     container_name: nib-vector
     restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
     volumes:
       - ./vector.yaml:/etc/vector/vector.yaml:ro
       - suricata-logs:/var/log/suricata:ro

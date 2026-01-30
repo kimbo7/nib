@@ -8,6 +8,14 @@ services:
     image: crowdsecurity/crowdsec:v1.6
     container_name: nib-crowdsec
     restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/run
     environment:
       - COLLECTIONS=crowdsecurity/suricata crowdsecurity/iptables crowdsecurity/linux
       - ENROLL_KEY=${CROWDSEC_ENROLL_KEY:-}

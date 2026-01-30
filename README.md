@@ -376,6 +376,30 @@ They can run side by side. Use separate Grafana instances (SIB on port 3000, NIB
 - CrowdSec API is bound to localhost by default
 - Grafana has anonymous access disabled, sign-up disabled
 - Admin password is auto-generated on first `make install`
+- All containers use `no-new-privileges` and `cap_drop: ALL` with only required capabilities added back
+- Non-host-network containers run with `read_only: true` filesystems
+
+## Security Hardening
+
+NIB runs with elevated privileges — it's part of your trust boundary. For production deployments:
+
+- **[Threat Model](docs/threat-model.md)** — What NIB detects, what it doesn't, and what happens if NIB itself is compromised
+- **[Production Checklist](docs/production-checklist.md)** — Step-by-step hardening checklist (copy-paste friendly)
+- **[Known Limitations](docs/known-limitations.md)** — WiFi capture, NIC offloading, false positives, blocking collateral, iptables interaction
+
+Run `make audit` to verify your security posture:
+
+```bash
+make audit
+```
+
+### Privacy Mode
+
+By default, NIB logs full protocol metadata (DNS queries, HTTP URLs, TLS SNI). Set `PRIVACY_MODE=alerts-only` in `.env` to only log IDS alerts:
+
+```bash
+PRIVACY_MODE=alerts-only
+```
 
 ## Troubleshooting
 
