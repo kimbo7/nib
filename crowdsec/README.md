@@ -206,20 +206,143 @@ make router-sync-daemon
 
 > **Fails open** means if the sync script or bouncer loses connection to LAPI, no new blocks are applied — but existing blocks on the router remain until they expire.
 
-**MikroTik setup:**
-1. Enable the REST API on your MikroTik (available in RouterOS 7.1+): `/ip/service enable api-ssl` or use HTTP
-2. Create a firewall rule to drop traffic from the address list:
+**MikroTik setup (RouterOS 7.1+):**
+
+The sync script pushes banned IPs to a MikroTik address list via the REST API. The address list alone does nothing — you must also create firewall rules that reference it.
+
+1. **Enable the REST API** (disabled by default):
    ```
-   /ip firewall filter add chain=forward src-address-list=nib-blocklist action=drop comment="NIB CrowdSec"
-   /ip firewall filter add chain=input src-address-list=nib-blocklist action=drop comment="NIB CrowdSec"
+   /ip/service/set www-ssl disabled=no
    ```
-3. Configure `ROUTER_*` variables in `.env` and run `make router-sync-daemon`
+   The REST API runs on the `www-ssl` (port 443) or `www` (port 80) service — it is part of the web interface, not the legacy `api` service. Confirm it's running:
+   ```
+   /ip/service/print where name=www-ssl
+   ```
+
+2. **Create a dedicated API user** (least privilege):
+   ```
+   /user/group/add name=nib-sync policy=read,write,api
+   /user/add name=nib-sync group=nib-sync password=your-strong-password
+   ```
+   Use this user for `ROUTER_USER` / `ROUTER_PASS` instead of `admin`.
+
+3. **Create firewall rules** that drop traffic from the address list. Place them near the top of your filter rules (before any accept rules):
+   ```
+   /ip/firewall/filter/add chain=input src-address-list=nib-blocklist action=drop comment="NIB CrowdSec" place-before=0
+   /ip/firewall/filter/add chain=forward src-address-list=nib-blocklist action=drop comment="NIB CrowdSec" place-before=0
+   ```
+   Without these rules, IPs are added to the list but no traffic is actually blocked.
+
+4. **Configure `.env`** and start syncing:
+   ```bash
+   ROUTER_TYPE=mikrotik
+   ROUTER_URL=https://192.168.1.1
+   ROUTER_USER=nib-sync
+   ROUTER_PASS=your-strong-password
+   ROUTER_LIST_NAME=nib-blocklist
+   ROUTER_VERIFY_SSL=false          # set true if using a valid cert
+   ```
+
+5. **Verify** it works:
+   ```bash
+   # Run a one-shot sync
+   make router-sync
+
+   # Check address list on MikroTik
+   /ip/firewall/address-list/print where list=nib-blocklist
+
+   # Start continuous sync
+   make router-sync-daemon
+   ```
 
 **OpenWrt setup:**
-1. Enable `luci-mod-rpc` and `luci-lib-json` packages
-2. Create an nftables set or ipset: `nft add set inet fw4 nib-blocklist { type ipv4_addr \; }`
-3. Add a firewall rule to drop: `nft add rule inet fw4 input ip saddr @nib-blocklist drop`
-4. Configure `ROUTER_*` variables in `.env` and run `make router-sync-daemon`
+
+The sync script authenticates via LuCI RPC and executes ipset/nftables commands on the router. You must create the set and firewall rule first.
+
+1. **Install required packages**:
+   ```
+   opkg update
+   opkg install luci-mod-rpc luci-lib-json
+   /etc/init.d/uhttpd restart
+   ```
+
+2. **Create a persistent nftables set**. Add to `/etc/nftables.d/nib-blocklist.nft` (or `/etc/firewall.nib` and include it):
+   ```
+   set nib-blocklist {
+       type ipv4_addr
+       flags timeout
+   }
+   ```
+   Then load it:
+   ```
+   nft add set inet fw4 nib-blocklist '{ type ipv4_addr; flags timeout; }'
+   ```
+
+3. **Add firewall rules** to drop traffic from the set:
+   ```
+   nft add rule inet fw4 input ip saddr @nib-blocklist drop
+   nft add rule inet fw4 forward ip saddr @nib-blocklist drop
+   ```
+   To persist across reboots, add these to `/etc/nftables.d/nib-blocklist.nft` as well.
+
+4. **Configure `.env`**:
+   ```bash
+   ROUTER_TYPE=openwrt
+   ROUTER_URL=https://192.168.1.1
+   ROUTER_USER=root
+   ROUTER_PASS=your-password
+   ROUTER_LIST_NAME=nib-blocklist
+   ```
+
+5. **Verify**:
+   ```bash
+   make router-sync
+   # On the router:
+   nft list set inet fw4 nib-blocklist
+   ```
+
+**Generic REST API setup:**
+
+For custom firewalls or middleware. The sync script sends JSON requests to your endpoint:
+
+```
+# Block request (POST):
+{"action": "block", "ip": "1.2.3.4", "list": "nib-blocklist", "source": "nib-crowdsec"}
+
+# Unblock request (DELETE):
+{"action": "unblock", "ip": "1.2.3.4", "list": "nib-blocklist", "source": "nib-crowdsec"}
+```
+
+Authentication uses HTTP basic auth (`ROUTER_USER` / `ROUTER_PASS`). Your endpoint should return HTTP 2xx on success.
+
+```bash
+ROUTER_TYPE=generic
+ROUTER_URL=https://firewall.internal/api/blocklist
+ROUTER_USER=nib
+ROUTER_PASS=your-api-secret
+```
+
+**Router sync troubleshooting:**
+
+```bash
+# Check if LAPI is reachable and has decisions
+curl -s -H "X-Api-Key: YOUR_BOUNCER_KEY" http://127.0.0.1:8080/v1/decisions | python3 -m json.tool
+
+# Test router API connectivity (MikroTik example)
+curl -sk -u nib-sync:password https://192.168.1.1/rest/ip/firewall/address-list?list=nib-blocklist
+
+# Run sync with debug output — the script prints each IP it adds/removes
+make router-sync
+
+# Check state file (tracks what was last synced)
+cat /tmp/nib-router-sync-last.json
+```
+
+Common issues:
+- **IPs synced but traffic not blocked**: Missing firewall rules on the router. The address list alone does nothing.
+- **Authentication failures**: Check `ROUTER_USER` / `ROUTER_PASS`. MikroTik REST API requires the `api` policy on the user group.
+- **SSL errors**: Set `ROUTER_VERIFY_SSL=false` for self-signed router certs.
+- **Empty sync**: No active CrowdSec decisions yet. Trigger a test with `make test-alert`, wait 30s, then retry.
 
 #### Option C: Cloudflare / CDN Bouncer
 
