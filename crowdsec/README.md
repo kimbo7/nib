@@ -155,16 +155,16 @@ sudo iptables -A INPUT -p tcp --dport 9443 -j DROP
 3. Generate a bouncer key: `make add-router-bouncer`
 4. Choose your blocking method:
 
-#### Option A: Native Router Plugin (pfSense / OPNsense)
+#### Option A: Native Router Plugin (pfSense / OPNsense) — Recommended
 
-Both pfSense and OPNsense have CrowdSec packages available in their plugin repositories.
+Both pfSense and OPNsense have native CrowdSec packages that handle everything automatically (firewall rules, alias management, decision polling). **Use this option if your router supports it** — no need for the sync script.
 
 **pfSense:**
 1. Install the `crowdsec` package from System > Package Manager
 2. Configure under Services > CrowdSec:
    - LAPI URL: `http://<nib-host>:8080`
    - Bouncer API Key: (from `make add-router-bouncer`)
-3. The pfSense bouncer creates a pf alias and firewall rule automatically
+3. The plugin creates a pf alias and firewall rule automatically — no manual firewall setup needed
 
 **OPNsense:**
 1. Install `os-crowdsec` from System > Firmware > Plugins
@@ -172,10 +172,17 @@ Both pfSense and OPNsense have CrowdSec packages available in their plugin repos
    - LAPI URL: `http://<nib-host>:8080`
    - Bouncer API Key: (from `make add-router-bouncer`)
 3. Enable the firewall bouncer under CrowdSec > Bouncers
+4. The plugin manages the firewall alias and rules automatically
 
-#### Option B: Router Sync Script (MikroTik, OpenWrt, generic)
+**Verify** the plugin is connected:
+```bash
+# On the NIB host — the router bouncer should appear as "validated"
+make bouncer-status
+```
 
-For routers with REST APIs, use the included sync script that polls LAPI and pushes to the router:
+#### Option B: Router Sync Script
+
+For routers without native CrowdSec plugins. The sync script polls LAPI and pushes decisions to the router's REST API.
 
 ```bash
 # Configure in .env
@@ -197,14 +204,15 @@ make router-sync-daemon
 
 | Router | Type | Auth Model | How It Blocks | Failure Mode |
 |--------|------|------------|---------------|--------------|
-| MikroTik (RouterOS 7+) | `mikrotik` | HTTP basic auth | Address list via REST API | Fails open (no blocks applied) |
-| pfSense | `pfsense` | Bouncer API key (native plugin) | pf alias + firewall rule | Plugin retries, fails open |
-| OPNsense | `opnsense` | Bouncer API key (native plugin) | Firewall alias via API | Plugin retries, fails open |
+| MikroTik (RouterOS 7+) | `mikrotik` | HTTP basic auth | Address list via REST API | Fails open |
 | OpenWrt | `openwrt` | HTTP session auth (luci-rpc) | ipset/nftables set | Fails open |
-| Any REST API | `generic` | Configurable (header/basic) | POSTs JSON to your endpoint | Depends on endpoint |
-| Cloudflare | CDN bouncer | API token | Edge firewall rules | Bouncer retries, fails open |
+| pfSense (no plugin) | `pfsense` | HTTP basic auth | pf alias via [fauxapi](https://github.com/ndejong/pfsense_fauxapi) | Fails open |
+| OPNsense (no plugin) | `opnsense` | HTTP basic auth | Firewall alias via API | Fails open |
+| Any REST API | `generic` | HTTP basic auth | POSTs JSON to your endpoint | Depends on endpoint |
 
-> **Fails open** means if the sync script or bouncer loses connection to LAPI, no new blocks are applied — but existing blocks on the router remain until they expire.
+> **Fails open** means if the sync script loses connection to LAPI, no new blocks are applied — but existing blocks on the router remain until they expire.
+>
+> **pfSense / OPNsense users**: Prefer Option A (native plugin) above. Only use the sync script if you cannot install the plugin.
 
 **MikroTik setup (RouterOS 7.1+):**
 
@@ -299,6 +307,70 @@ The sync script authenticates via LuCI RPC and executes ipset/nftables commands 
    make router-sync
    # On the router:
    nft list set inet fw4 nib-blocklist
+   ```
+
+**pfSense setup (without native plugin):**
+
+If you cannot install the native CrowdSec plugin (Option A), the sync script uses [fauxapi](https://github.com/ndejong/pfsense_fauxapi) to manage firewall aliases via REST.
+
+1. **Install fauxapi** on pfSense:
+   ```
+   pkg install pfSense-pkg-faux-api
+   ```
+   If the package is unavailable for your pfSense version, use Option A (native plugin) or the `generic` router type with a custom endpoint instead.
+
+2. **Create a firewall alias** in Firewall > Aliases:
+   - Name: `nib_blocklist` (underscores, not hyphens — pfSense alias names don't allow hyphens)
+   - Type: Host(s)
+   - Leave entries empty — the sync script populates it
+
+3. **Create firewall rules** in Firewall > Rules > WAN (and LAN if needed):
+   - Action: Block
+   - Source: Single host or alias → `nib_blocklist`
+   - Destination: Any
+   - Description: `NIB CrowdSec`
+
+4. **Create a fauxapi key** under System > Faux API > Credentials. Note the API key and secret.
+
+5. **Configure `.env`**:
+   ```bash
+   ROUTER_TYPE=pfsense
+   ROUTER_URL=https://192.168.1.1
+   ROUTER_USER=PFFA-fauxapi-key
+   ROUTER_PASS=fauxapi-secret
+   ROUTER_LIST_NAME=nib_blocklist
+   ```
+
+**OPNsense setup (without native plugin):**
+
+If you cannot install the native CrowdSec plugin (Option A), the sync script manages firewall aliases via the OPNsense API.
+
+1. **Create a firewall alias** in Firewall > Aliases:
+   - Name: `nib-blocklist`
+   - Type: Host(s)
+   - Leave entries empty — the sync script populates it
+
+2. **Create firewall rules** in Firewall > Rules > WAN:
+   - Action: Block
+   - Source: `nib-blocklist` (alias)
+   - Destination: Any
+   - Description: `NIB CrowdSec`
+
+3. **Create an API key** under System > Access > Users. Select your user, create an API key (downloads a `key`/`secret` pair).
+
+4. **Configure `.env`**:
+   ```bash
+   ROUTER_TYPE=opnsense
+   ROUTER_URL=https://192.168.1.1
+   ROUTER_USER=api-key
+   ROUTER_PASS=api-secret
+   ROUTER_LIST_NAME=nib-blocklist
+   ```
+
+5. **Verify**:
+   ```bash
+   make router-sync
+   # Check in OPNsense GUI: Firewall > Diagnostics > Aliases → nib-blocklist should show IPs
    ```
 
 **Generic REST API setup:**
