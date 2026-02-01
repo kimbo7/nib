@@ -9,6 +9,35 @@ Part of the **in-a-Box** family:
 - [**OIB**](https://github.com/matijazezelj/oib) - Observability in a Box
 - **NIB** - NIDS in a Box (this project)
 
+## IDS vs IPS: What NIB Actually Does
+
+**IDS** (Intrusion Detection System) = Passive monitoring, alerts only  
+**IPS** (Intrusion Prevention System) = Inline blocking, drops packets in real-time
+
+NIB operates in two modes:
+
+| Mode | How It Works | Blocking | Best For |
+|------|--------------|----------|----------|
+| **Local** (default) | NIB runs on the host you want to protect | iptables blocks on that host | Servers directly exposed to internet |
+| **Sensor** (mirror/SPAN) | NIB receives mirrored traffic from a switch | Pushes bans to router/firewall | Dedicated IDS appliance, full network visibility |
+
+### Sensor Mode (Port Mirror) — What You're Really Getting
+
+When using a **port mirror/SPAN**, NIB is:
+- ✅ **IDS**: Suricata detects threats and generates alerts in real-time
+- ⚠️ **Delayed IPS**: CrowdSec pushes blocks to your router/firewall, but it's **not instant** — the first packets of an attack get through before the ban kicks in (typically 1-5 seconds)
+
+This is **not** inline IPS. For true real-time packet dropping, traffic would need to flow *through* NIB (which adds latency and creates a single point of failure).
+
+**Sensor mode is ideal when:**
+- You want full network visibility without being inline
+- Your router/firewall can receive CrowdSec decisions (pfSense, OPNsense, MikroTik, etc.)
+- You're okay with blocking attackers *after* initial detection rather than on the first packet
+
+### Local Mode — True IPS for That Host
+
+When NIB runs directly on an internet-facing server (not mirrored traffic), the iptables bouncer **is** a real IPS for that specific host — it drops packets before they reach your applications.
+
 ## Features
 
 - **Network IDS**: Suricata deep packet inspection with 40,000+ ET Open signatures
