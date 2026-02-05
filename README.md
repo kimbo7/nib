@@ -111,7 +111,7 @@ Suricata performs deep packet inspection on every packet. CPU is the main bottle
 
 **Notes:**
 - These are for **sustained** throughput. Bursty home traffic uses far less — a 4-core system often handles 1 Gbps fine
-- 10 Gbps requires careful tuning (RSS, CPU affinity, ring buffers) — see [docs/10g-tuning.md](docs/10g-tuning.md) if available
+- 10 Gbps requires careful tuning (RSS, CPU affinity, ring buffers) — see [docs/10g-tuning.md](docs/10g-tuning.md)
 - VMs work great — just ensure virtio or SR-IOV passthrough for high speeds
 - Check for packet drops: `make shell-suricata` then `suricatasc -c "iface-stat default"`
 
